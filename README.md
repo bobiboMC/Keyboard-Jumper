@@ -5,7 +5,7 @@ Type as fast as you can the word you see on the screen while u see your favorite
 1. Main screen to enter the game.
 2. Game screen to play the game.
 3. Showing word to type.
-4. Showing errors of mistype.
+4. Showing number of mistypes.
 5. Changing your initial shape.
 6. Jump modes:
    *SPIN* - jump+spin
