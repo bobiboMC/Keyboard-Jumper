@@ -8,7 +8,7 @@ Type as fast as you can the word you see on the screen while u see your favorite
 4. Showing amount of mistypes.
 5. Changing your initial shape.
 6. Jump modes:
-   *SPIN* - jump+spin
+   *SPIN* - jump+spin, 
    *NORMAL* - only jump
 7. When typing correct word- jumping
 8. Achieve max mistypes - show game over screen
