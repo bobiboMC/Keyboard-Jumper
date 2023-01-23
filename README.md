@@ -13,3 +13,6 @@ Type as fast as you can the word you see on the screen while u see your favorite
 7. When typing correct word- jumping
 8. Achieve max mistypes - show game over screen
 9. Showing the time that pass until complete typing all words successfully
+
+## How to run
+Simply run 'keyboard_jumper.py' as main program.
