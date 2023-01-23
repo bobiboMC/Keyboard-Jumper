@@ -1,6 +1,5 @@
 import tkinter as tk
 import tkinter.ttk as ttk
-import pandas as pd
 import constants
 import random
 import time
@@ -312,6 +311,3 @@ if __name__ == '__main__':
     root.configure(bg='gray')
     root.title("main menu")    
     main()    
-
-
-#https://codereview.stackexchange.com/questions/175813/python-tkinter-bouncing-ball-animation  
