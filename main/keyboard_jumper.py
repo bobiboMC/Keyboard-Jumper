@@ -1,5 +1,6 @@
 import tkinter as tk
 import tkinter.ttk as ttk
+import pandas as pd
 import constants
 import random
 import time
@@ -10,13 +11,17 @@ import rotation as rtt
 font_primary=constants.FONT_PRIMARY
 G=10.0 
 V_0=60 
-MODE='NORMAL' #SPIN -jumping and spinning rect,NORMAL-only jumping rect
-words_to_type=['dad','mom','back','snake','rock']
-total_height=0
-temp_height=0
-my_state='ground'
-t=0
-t_down=0
+MODE='SPIN' #SPIN -jumping and spinning rect,NORMAL-only jumping rect
+words_to_type=['mom','mom','mom','mom','mom']
+total_height=0 #height that the object pass until some point in time
+temp_height=0 #height to add to gravity formula when object jump in air
+my_state='ground' #three states of the jumping object: 'ground','air','falling'
+t=0 #time that the object need to go up
+t_down=0 #time that the object need to fall
+total_angle=0 # total angle of spin that object pass
+switch=False # switch angle correctly when object still not on ground
+left_spins=18 #spin in each height
+max_spin_add=0 #angle to add to spin so will be same speed approximately 
 
 def on_closing(top):
         top.destroy()
@@ -39,13 +44,11 @@ def play_again(frame,canvas,id_rect,showed_label,L_wrong,area_typing,height_canv
 #check I the typed word is correct to the word that is showing on screen    
 def check(event,word,canvas,frame,id_rect,showed_label,
           area_typing,L_wrong,removable_words_to_type,start_typing,height_canvas,num_of_edges):
-    global t_add
-    global to_add_total
     global my_state
     global temp_height
     global total_height
-    global universal_t
     global t
+    global switch
     if word[:len(word)-1]==showed_label.cget('text')[:len(word)-1]: #start of word
         if word[:len(word)-1]==showed_label.cget('text'):#same word
             if word==showed_label.cget('text')+'\n': #write correct word
@@ -57,12 +60,14 @@ def check(event,word,canvas,frame,id_rect,showed_label,
                 elif my_state=='air':
                         t=0
                         temp_height+=total_height
+                        switch=True
                 elif my_state=='falling':
                         my_state='air'
                         temp_height=0
                         t=0
                         temp_height+=total_height
                         temp_height=467.5-temp_height
+                        switch=True
                 #remove word from the word's list
                 removable_words_to_type.remove(showed_label.cget('text'))
                 #check how many words left to game over
@@ -96,8 +101,9 @@ def activate_game(frame,canvas,id_rect,height_canvas,L_to_type,L_wrong_type,
         global my_state
         global t
         global temp_height
-        global counter
-        
+        global total_angle
+        global left_spins
+        global max_spin_add
         #print(canvas.coords(id_rect)[1],'activ')
         if event:
                 if '1' not in (event.widget)['text']:
@@ -125,12 +131,18 @@ def activate_game(frame,canvas,id_rect,height_canvas,L_to_type,L_wrong_type,
                                  T_to_type,start_typing,num_of_edges,
                                  event),
                                  'inc','dec')
-
-        counter=0
+                        
+        #reset variables after activating again the game
+        max_spin_add=0
+        left_spins=18                
+        total_angle=0
         temp_height=0
         t=0
         my_state=='ground'
-        canvas.move(id_rect,0,467.5-canvas.coords(id_rect)[1])
+        down_left=canvas.coords(id_rect)[1]
+        top_left=canvas.coords(id_rect)[3]
+        max_value_coord=max(down_left,top_left)
+        canvas.move(id_rect,0,467.5-max_value_coord)
         
         root.bind("<space>",lambda event:animate_up(canvas,id_rect,0,height_canvas))                            
         removable_words_to_type=list(words_to_type)
@@ -221,16 +233,16 @@ def animate_up(canvas,id_rect,height_canvas,old_h_t):
     global t_down
     if t<V_0/G : #jumping,max height   
         t+=(V_0/G)/30 #18=60*t-10*(0.5)*t^2 --> 36-120t+10t^2=0
-        t=round(t,2)      
+        t=round(t,15) #more accurate time     
         new_h_t=temp_height+V_0*t-G*(t**2)/2
         diff_h_t=new_h_t-old_h_t #diff heights 
         total_height=new_h_t
         canvas.move(id_rect,0,-diff_h_t)
         old_h_t=new_h_t
         #spin rect
-        if MODE=='SPIN': #spinning in the air               
+        if MODE=='SPIN': #spinning in the air
                 spin(canvas,id_rect)      
-        root.after(10,lambda:animate_up(canvas,id_rect,height_canvas,old_h_t))      
+        root.after(10,lambda:animate_up(canvas,id_rect,height_canvas,old_h_t)) #less time after --> more smooth
     else: #calc time to fall down and activate fall down  
         t_to_fall=math.sqrt(old_h_t/(0.5*G))
         my_state='falling'
@@ -242,30 +254,56 @@ def animate_down(canvas,id_rect,height_canvas,t_to_fall,old_h_t=0):
     global my_state
     global t_down
     global total_height
+    global max_spin_add
+    global left_spins
+    global t
+    global temp_height
+    global total_angle
     if my_state=='falling':
             if t_down<t_to_fall and t_to_fall-t_down>0.1: #falling   
-                t_down+=t_to_fall/30
-                t_down=round(t_down,15)
+                t_down+=t_to_fall/30 #less number to divide,slower the object will be move
+                t_down=round(t_down,15) #more accurate time
                 new_h_t=G*(t_down**2)/2
                 h_t=new_h_t-old_h_t #diff heights
                 old_h_t=new_h_t
+                
                 canvas.move(id_rect,0,h_t)
+                
                 total_height=canvas.coords(id_rect)[1]
                 if MODE=='SPIN': #spinning in the air
                         spin(canvas,id_rect)   
                 for k in range(0,len(canvas.coords(id_rect))-1,2):
-                        if canvas.coords(id_rect)[k+1]>466.5:
+                        if canvas.coords(id_rect)[k+1]>455.5: #fix slightly over spin the platform
+                                down_left=canvas.coords(id_rect)[1]
+                                top_left=canvas.coords(id_rect)[3]
+                                max_value_coord=max(down_left,top_left)
+                                canvas.move(id_rect,0,467.5-max_value_coord)
                                 break        
                 root.after(10,lambda:animate_down(canvas,id_rect,height_canvas,t_to_fall,old_h_t))
-            else:
+            else: #reset variables after object hitting ground
                   my_state='ground'
+                  down_left=canvas.coords(id_rect)[1]
+                  top_left=canvas.coords(id_rect)[3]
+                  max_value_coord=max(down_left,top_left)
+                  max_spin_add=0
+                  left_spins=18
+                  t=0
+                  temp_height=0
+                  total_angle=0
+                  canvas.move(id_rect,0,467.5-max_value_coord)
                   return  
     elif my_state=='air':
+        t=0   
         animate_up(canvas,id_rect,height_canvas,467.5-canvas.coords(id_rect)[1])
         
 
 #spinning polygon
 def spin(canvas,id_rect):
+        global total_angle
+        global switch
+        global left_spins
+        global max_spin_add
+        new_square=''
         vertices=[]
         for k in range(0,len(canvas.coords(id_rect))-1,2):
                 x=canvas.coords(id_rect)[k]
@@ -279,7 +317,21 @@ def spin(canvas,id_rect):
         mid_y_rect = sum(_y_list) / len_vertices
 
         center = (mid_x_rect, mid_y_rect)
-        new_square = rtt.rotate(vertices, 18, center)
+        #object still not jump in air
+        if not(switch):
+                total_angle+=left_spins
+                new_square = rtt.rotate(vertices, left_spins, center)
+        #object jump in air        
+        else:
+                #fixing speed of spinning object
+                if abs(1800-total_angle+max_spin_add)<1000: #1800-->angle
+                        max_spin_add+=1080
+                left_spins=(1800-total_angle+max_spin_add)/60 #60 --> number of iterations of jumping+falling
+                total_angle+=left_spins
+                new_square = rtt.rotate(vertices, left_spins, center)
+                number_of_spins=0
+                switch=False
+
         squares=[]
         for p in range(0,len(new_square)):
                 x=new_square[p][0]
